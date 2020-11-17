@@ -1,0 +1,13 @@
+{
+    "name": "docker-cats",
+    "version": "1.0.0",
+    "description": "Docker cats",
+    "author": "Meir Gabay",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "express": "^4.16.1"
+    }
+}

@@ -4,6 +4,7 @@
     "description": "Docker cats",
     "author": "Meir Gabay",
     "main": "server.js",
+    "license": "MIT",
     "scripts": {
         "start": "node server.js"
     },

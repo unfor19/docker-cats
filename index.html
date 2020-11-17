@@ -2,16 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <title>APP_NAME</title>
 </head>
-<body>
-  <h2>Hello from Nginx container</h2>
-
-<script type="text/javascript">
-    window.onload = function(){
-        document.title = process.env.APP_NAME
-        document.body.style = `background-image: url('images/${process.env.APP_NAME}.jpg');`
-    }
-</script>
+<body style="background-image: url('images/APP_NAME.jpg')">
+  <h2>Hello from APP_NAME cat</h2>
 
 </body>
 </html>

@@ -6,24 +6,30 @@ var path = require('path');
 
 var fs = require('fs');
 const index_path = path.join(__dirname + '/index.html');
+
+// Constants
+const APP_NAME = process.env.APP_NAME;
+const PORT = 8080;
+const HOST = '0.0.0.0';
+
+// App
+const app = express();
 fs.readFile(index_path, 'utf8', function (err, data) {
     if (err) {
         return console.log(err);
     }
-    var result = data.replace(/APP_NAME/g, process.env.APP_NAME);
+    var result = data.replace(/APP_NAME/g, APP_NAME);
 
     fs.writeFile(index_path, result, 'utf8', function (err) {
         if (err) return console.log(err);
     });
 });
 
-// Constants
-const PORT = 8080;
-const HOST = '0.0.0.0';
-
-// App
-const app = express();
 app.get('/', (req, res) => {
+    res.sendFile(index_path);
+});
+
+app.get(`/${APP_NAME}`, (req, res) => {
     res.sendFile(index_path);
 });
 

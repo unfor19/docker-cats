@@ -2,7 +2,10 @@
 
 const express = require('express');
 var path = require('path');
-
+const logger = function (req, res, next) {
+    console.log(`\nRequest:\n${req}\nResponse:\n${res}\n}`);
+    next(); // Passing the request to the next handler in the stack.
+}
 
 var fs = require('fs');
 const index_path = path.join(__dirname + '/index.html');
@@ -25,6 +28,8 @@ fs.readFile(index_path, 'utf8', function (err, data) {
     });
 });
 
+app.use(logger);
+
 app.get('/', (req, res) => {
     res.sendFile(index_path);
 });
@@ -32,6 +37,7 @@ app.get('/', (req, res) => {
 app.get(`/${APP_NAME}`, (req, res) => {
     res.sendFile(index_path);
 });
+
 
 app.use('/images', express.static(path.join(__dirname, 'images')))
 app.use(`/${APP_NAME}/images`, express.static(path.join(__dirname, 'images')))

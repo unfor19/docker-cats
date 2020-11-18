@@ -3,7 +3,7 @@
 const express = require('express');
 var path = require('path');
 const logger = function (req, res, next) {
-    console.log(`\nPath: ${req.path}\nRoute: ${JSON.stringify(req.route)}\nBody: ${req.body}\n`);
+    console.log(`\nOriginal URL: ${req.originalUrl}\nBase URL: ${req.baseUrl}\nPath: ${req.path}\nRoute: ${JSON.stringify(req.route)}\nBody: ${req.body}\n`);
     next(); // Passing the request to the next handler in the stack.
 }
 

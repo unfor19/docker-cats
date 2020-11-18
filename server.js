@@ -34,12 +34,12 @@ app.get('/', (req, res) => {
     res.sendFile(index_path);
 });
 
-app.get(`/${APP_NAME}`, (req, res) => {
-    res.sendFile(index_path);
-});
+// app.get(`/${APP_NAME}`, (req, res) => {
+//     res.sendFile(index_path);
+// });
 
 
 app.use('/images', express.static(path.join(__dirname, 'images')))
-app.use(`/${APP_NAME}/images`, express.static(path.join(__dirname, 'images')))
+// app.use(`/${APP_NAME}/images`, express.static(path.join(__dirname, 'images')))
 app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);

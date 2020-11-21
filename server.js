@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+var favicon = require('serve-favicon')
 var path = require('path');
 const logger = function (req, res, next) {
     console.log(`\nOriginal URL: ${req.originalUrl}\nBase URL: ${req.baseUrl}\nPath: ${req.path}\nRoute: ${JSON.stringify(req.route)}\nBody: ${req.body}\n`);
@@ -38,7 +39,7 @@ app.get('/', (req, res) => {
 //     res.sendFile(index_path);
 // });
 
-
+app.use(favicon(path.join(__dirname, 'favicon.ico')))
 app.use('/images', express.static(path.join(__dirname, 'images')))
 // app.use(`/${APP_NAME}/images`, express.static(path.join(__dirname, 'images')))
 app.listen(PORT, HOST);

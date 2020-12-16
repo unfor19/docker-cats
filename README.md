@@ -15,7 +15,7 @@ Available APP_NAME:
 - dark
 
 ```
-$ docker run --name unfor19/docker-cats --rm -p 8080:8080 -e APP_NAME=baby cats
+$ docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=baby unfor19/docker-cats
 ```
 
 ## Build From Source

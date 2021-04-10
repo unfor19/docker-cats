@@ -66,8 +66,9 @@ app.get('/', async (req, res) => {
     var fileStream = read_file();
     var requesting_user = null
 
-    const token = req.headers.authorization.split(" ")[1];
-    if (CLIENT_ID != '') {
+
+    if (req.headers.hasOwnProperty('authorization') && CLIENT_ID != '') {
+        const token = req.headers.authorization.split(" ")[1];
         var verifiedTokenResponse = await verifyToken(token);
         if (verifiedTokenResponse != false) {
             console.log(JSON.stringify(verifiedTokenResponse, null, 2));

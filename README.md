@@ -14,20 +14,20 @@ Available APP_NAME:
 - green
 - dark
 
-```
-$ docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=baby unfor19/docker-cats
+```bash
+docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=baby unfor19/docker-cats
 ```
 
 Change the author
 
-```
-$ docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=dark -e FROM_AUTHOR=darker unfor19/docker-cats
+```bash
+docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=dark -e FROM_AUTHOR=darker unfor19/docker-cats
 ```
 
 ## Build From Source
 
-```
-$ docker build -t unfor19/docker-cats .
+```bash
+docker build -t unfor19/docker-cats .
 ```
 
 ## References

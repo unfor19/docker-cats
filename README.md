@@ -30,6 +30,10 @@ docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=dark -e FROM_AUTHOR=dar
 docker build -t unfor19/docker-cats .
 ```
 
+## Challenge
+
+The [Dockerfile](https://github.com/unfor19/docker-cats/blob/master/Dockerfile) can be improved, and there's no CI/CD process for this project. Go check [unfor19/devops-genin](https://github.com/unfor19/devops-genin) for more details.
+
 ## References
 
 - [images/baby.jpg](./images/baby.jpg) source https://www.findcatnames.com/great-black-cat-names/ - [img](https://t9b8t3v6.rocketcdn.me/wp-content/uploads/2014/10/black-cat-and-moon.jpg)

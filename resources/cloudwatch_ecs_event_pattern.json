@@ -1,0 +1,11 @@
+{
+  "source": ["aws.ecs"],
+  "detail-type": ["ECS Task State Change"],
+  "detail": {
+    "clusterArn": [
+      "arn:aws:ecs:eu-west-1:01234567890:cluster/docker-cats-stg"
+    ],
+    "lastStatus": ["RUNNING"],
+    "desiredStatus": ["RUNNING"]
+  }
+}

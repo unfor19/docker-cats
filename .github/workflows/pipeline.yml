@@ -1,26 +1,124 @@
-name: CI
-
+name: pipeline
 on:
+  workflow_dispatch:
   push:
     branches:
-      - master
-  workflow_dispatch:
+      - staging
+      - production
+    paths-ignore:
+      - README.md
+env:
+  ### ----------------------------------------------------------------
+  ### Switch the number to purge cache
+  PURGE_CACHE: "1"
+  AWS_REGION: eu-west-1
+  ### ----------------------------------------------------------------
 
 jobs:
-  docker:
-    runs-on: ubuntu-latest
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-20.04
     steps:
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      # - name: Login to DockerHub
-      #   uses: docker/login-action@v1
-      #   with:
-      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v2
+      - uses: actions/checkout@v2
+      - name: Set Configmap
+        id: set-configmap
+        run: |
+          jq . configmap.json
+          jq -c . configmap.json
+          echo "::set-output name=configmap::$(jq -c . configmap.json)"
+      - name: Export Configmap
         with:
-          push: false
-          tags: user/app:latest
+          configmap_map: ${{ steps.set-configmap.outputs.configmap }}
+          configmap_key: ${{ github.ref_name }}
+        id: export-configmap
+        uses: unfor19/configmap-action@development
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v3.x
+      - name: Dynamic Outputs
+        id: dynamic-outputs
+        run: |
+          echo "::set-output name=GIT_BRANCH::${GITHUB_REF_SLUG}"
+          echo "::set-output name=GIT_SHORT_COMMIT::${GITHUB_SHA:0:8}"
+          [[ ${{ steps.export-configmap.outputs.CONFIGMAP_SELECTED_KEY }} != "default" && $GITHUB_EVENT_NAME == "push" ]] && IS_DEPLOY=true || IS_DEPLOY=false
+          echo "::set-output name=IS_DEPLOY::${IS_DEPLOY}"
+          echo "IS_DEPLOY=${IS_DEPLOY}"
+    outputs:
+      CONFIGMAP: ${{ steps.export-configmap.outputs.CONFIGMAP_MAP }}
+      GIT_BRANCH: ${{ steps.dynamic-outputs.outputs.GIT_BRANCH }}
+      GIT_COMMIT: ${{ steps.dynamic-outputs.outputs.GIT_SHORT_COMMIT }}
+      IS_DEPLOY: ${{ steps.dynamic-outputs.outputs.IS_DEPLOY }}
+
+  docker-build-push:
+    name: Docker Build Push
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-20.04
+    needs:
+      - prepare
+    strategy:
+      matrix:
+        configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}
+    env:
+      DOCKER_APP_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
+      GIT_BRANCH: ${{ needs.prepare.outputs.GIT_BRANCH }}
+      GIT_COMMIT: ${{ needs.prepare.outputs.GIT_COMMIT }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets[matrix.configmap.DOCKER_USERNAME_NAME] }}
+          aws-secret-access-key: ${{ secrets[matrix.configmap.DOCKER_PASSWORD_NAME] }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ env.DOCKER_APP_TAG }}
+
+  deploy-ecs:
+    name: Deploy to ECS
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-20.04
+    needs:
+      - prepare
+      - docker-build-push
+    strategy:
+      matrix:
+        configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}
+    env:
+      DOCKER_APP_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
+      DEPLOYMENT_AWS_ACCESS_KEY_ID_NAME: ${{ matrix.configmap.DEPLOYMENT_AWS_ACCESS_KEY_ID_NAME }}
+      DEPLOYMENT_AWS_SECRET_ACCESS_KEY_NAME: ${{ matrix.configmap.DEPLOYMENT_AWS_SECRET_ACCESS_KEY_NAME }}
+      ECS_CLUSTER_NAME: ${{ matrix.configmap.ECS_CLUSTER_NAME }}
+      ECS_SERVICE_NAME: ${{ matrix.configmap.ECS_SERVICE_NAME }}
+      DEPLOYMENT_MIN_DESIRED: 100
+      DEPLOYMENT_MAX_DESIRED: 200
+      DEPLOYMENT_TIMEOUT: 600 # 5 minutes
+      SKIP_DEPLOYMENTS_CHECK: ${{ matrix.configmap.SKIP_DEPLOYMENT_CHECKS }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Wait Before Deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets[env.DEPLOYMENT_AWS_ACCESS_KEY_ID_NAME] }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets[env.DEPLOYMENT_AWS_SECRET_ACCESS_KEY_NAME] }}
+          # ECS_CLUSTER_NAME - provided in job env
+          # ECS_SERVICE_NAME - provided in job env
+        run: |
+          scripts/ecs_deploy_wait.sh
+      - name: Install ECS Deploy
+        run: |
+          aws --version
+          jq --version
+          curl -o /usr/local/bin/ecs-deploy https://raw.githubusercontent.com/unfor19/ecs-deploy/fb9846831f2f48a5abc8d26f5f3c14cdf40201c6/ecs-deploy
+          sudo chmod +x /usr/local/bin/ecs-deploy
+          ecs-deploy --version
+      - env:
+          AWS_ACCESS_KEY_ID: ${{ secrets[env.DEPLOYMENT_AWS_ACCESS_KEY_ID_NAME] }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets[env.DEPLOYMENT_AWS_SECRET_ACCESS_KEY_NAME] }}
+        run: |
+          ecs-deploy --region "${AWS_REGION}" --cluster "${ECS_CLUSTER_NAME}" --service-name "${ECS_SERVICE_NAME}" --image "${DOCKER_APP_TAG}" --timeout "${DEPLOYMENT_TIMEOUT}" --min "${DEPLOYMENT_MIN_DESIRED}" --max "${DEPLOYMENT_MAX_DESIRED}" --enable-rollback $SKIP_DEPLOYMENTS_CHECK

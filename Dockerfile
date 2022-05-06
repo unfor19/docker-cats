@@ -5,8 +5,8 @@ FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
 WORKDIR /usr/src/app
 
 # Install dependencies - cache it
-COPY package*.json ./
-RUN npm install
+COPY package*.json yarn.lock ./
+RUN yarn install
 
 # Copy source code
 COPY . .

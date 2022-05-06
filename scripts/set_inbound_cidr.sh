@@ -30,7 +30,7 @@ revoke_sg_inbound(){
     local protocol="$2"
     local port="$3"
     local cidr_range="$4"
-    sleep 1
+    sleep 0.5
     log_msg "Attempting to REMOVE existing rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
     if aws ec2 revoke-security-group-ingress \
         --group-id "$sg_id" \
@@ -48,7 +48,7 @@ authorize_sg_inbound(){
     local protocol="$2"
     local port="$3"
     local cidr_range="$4"
-    sleep 1    
+    sleep 0.5
     log_msg "Attempting to UPDATE rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
     aws ec2 authorize-security-group-ingress \
         --group-id "$sg_id" \

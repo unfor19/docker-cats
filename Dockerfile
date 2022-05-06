@@ -1,8 +1,7 @@
-ARG NODE_VERSION="12.9.1"
-ARG ALPINE_VERSION="3.11"
+ARG BASE_IMAGE="node"
+ARG BASE_IMAGE_TAG="16.15.0-buster-slim"
 
-
-FROM node:${NODE_VERSION}-${ALPINE_VERSION}}
+FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
 WORKDIR /usr/src/app
 
 # Install dependencies - cache it

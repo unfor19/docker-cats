@@ -169,6 +169,7 @@ jobs:
   app-status-check:
     name: App Status Check
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-20.04
     needs:
       - prepare
       - docker-build-push

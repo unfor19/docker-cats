@@ -43,7 +43,8 @@ def main():
                     data={
                         "name": dns_record_name,
                         "content": dns_record_value,
-                        "type": dns_record_type
+                        "type": dns_record_type,
+                        "proxied": True
                     })
             except Exception as e:
                 print("Failed to update DNS record", e)

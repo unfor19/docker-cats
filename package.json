@@ -1,0 +1,19 @@
+{
+    "name": "docker-cats",
+    "version": "1.0.0",
+    "description": "Docker cats",
+    "author": "Meir Gabay",
+    "main": "server.js",
+    "license": "MIT",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "express": "^4.16.1",
+        "google-auth-library": "^7.0.4",
+        "serve-favicon": "^2.5.0"
+    },
+    "devDependencies": {
+        "dotenv": "^8.2.0"
+    }
+}

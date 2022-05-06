@@ -97,7 +97,7 @@ jobs:
           # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-      - # Temp fix to Local cache exporter
+      # - # Temp fix to Local cache exporter
         # https://github.com/docker/build-push-action/issues/252
         # https://github.com/moby/buildkit/issues/1896
         # name: Move cache

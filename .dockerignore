@@ -1,6 +1,4 @@
 **
-!server.js
-!package*.json
-!yarn.lock
-!favicon.ico
-!index.html
+!server
+!app
+.*

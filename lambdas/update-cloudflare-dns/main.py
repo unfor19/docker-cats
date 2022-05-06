@@ -67,6 +67,9 @@ def main(event=None, context=None):
         dns_record_value = extract_publicip_from_event(event)
 
     print("dns_record_value:", dns_record_value)
+
+    # All calls through the Cloudflare Client API are rate-limited by Cloudflare account to 1200 requests every 5 minutes.
+    # https://support.cloudflare.com/hc/en-us/articles/200171456-How-many-API-calls-can-I-make
     cf = CloudFlare.CloudFlare()
     zone_id = environ.get('CLOUDFLARE_ZONE_ID')
     try:

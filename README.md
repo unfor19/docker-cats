@@ -34,6 +34,17 @@ docker build -t unfor19/docker-cats .
 
 The [Dockerfile](https://github.com/unfor19/docker-cats/blob/master/Dockerfile) can be improved, and there's no CI/CD process for this project. Go check [unfor19/devops-genin](https://github.com/unfor19/devops-genin) for more details.
 
+## AWS
+
+1. Allow inbound from Cloudflare only, according to this - https://www.cloudflare.com/ips-v4
+   ```bash
+   # Requires AWS CLI and curl
+   export \
+     SECURITY_GROUP_ID="sg-0d7209c7061234567"
+     AWS_REGION="eu-west-1"
+   ./scripts/set_inbound_cidr.sh
+   ```
+
 ## References
 
 - [images/baby.jpg](./images/baby.jpg) source https://www.findcatnames.com/great-black-cat-names/ - [img](https://t9b8t3v6.rocketcdn.me/wp-content/uploads/2014/10/black-cat-and-moon.jpg)

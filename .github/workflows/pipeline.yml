@@ -168,11 +168,11 @@ jobs:
 
   app-status-check:
     name: App Status Check
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.prepare.outputs.IS_DEPLOY == 'true' }}
     runs-on: ubuntu-20.04
     needs:
       - prepare
-      - docker-build-push
+      - deploy-ecs
     strategy:
       matrix:
         configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}

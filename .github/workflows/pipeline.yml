@@ -165,3 +165,29 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets[env.DEPLOYMENT_AWS_SECRET_ACCESS_KEY_NAME] }}
         run: |
           ecs-deploy --region "${AWS_REGION}" --cluster "${ECS_CLUSTER_NAME}" --service-name "${ECS_SERVICE_NAME}" --image "${DOCKER_APP_TAG}" --timeout "${DEPLOYMENT_TIMEOUT}" --min "${DEPLOYMENT_MIN_DESIRED}" --max "${DEPLOYMENT_MAX_DESIRED}" --enable-rollback $SKIP_DEPLOYMENTS_CHECK
+
+  app-status-check:
+    name: App Status Check
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    needs:
+      - prepare
+      - docker-build-push
+    strategy:
+      matrix:
+        configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}
+    env:
+      APP_URL: ${{ matrix.configmap.APP_URL }}
+    steps:
+      - name: Check http status code of ${{ env.APP_URL }}
+        uses: jtalk/url-health-check-action@v2
+        with:
+          # Check the following URLs one by one sequentially
+          url: https://${{ env.APP_URL }}|http://${{ env.APP_URL }}
+          # Follow redirects, or just report success on 3xx status codes
+          follow-redirect: false # Optional, defaults to "false"
+          # Fail this action after this many failed attempts
+          max-attempts: 3 # Optional, defaults to 1
+          # Delay between retries
+          retry-delay: 5s # Optional, only applicable to max-attempts > 1
+          # Retry all errors, including 404. This option might trigger curl upgrade.
+          retry-all: false # Optional, defaults to "false"

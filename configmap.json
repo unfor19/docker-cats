@@ -10,7 +10,8 @@
       "ECS_CLUSTER_NAME": "docker-cats-stg",
       "ECS_SERVICE_NAME": "docker-cats-stg",
       "SKIP_DEPLOYMENT_CHECKS": "--skip-deployments-check",
-      "DEPLOYMENT_ENVIRONMENT": "staging"
+      "DEPLOYMENT_ENVIRONMENT": "staging",
+      "APP_URL": "docker-cats-stg.meirg.co.il"
     }
   ],
   "production": [
@@ -24,7 +25,8 @@
       "ECS_CLUSTER_NAME": "docker-cats-prd",
       "ECS_SERVICE_NAME": "docker-cats-prd",
       "SKIP_DEPLOYMENT_CHECKS": "",
-      "DEPLOYMENT_ENVIRONMENT": "production"
+      "DEPLOYMENT_ENVIRONMENT": "production",
+      "APP_URL": "docker-cats.meirg.co.il"
     }
   ],
   "default": []

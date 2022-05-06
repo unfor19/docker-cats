@@ -31,13 +31,13 @@ revoke_sg_inbound(){
     local port="$3"
     local cidr_range="$4"
     sleep 0.5
-    log_msg "Attempting to REMOVE existing rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
+    log_msg "Attempting to REMOVE existing rule for CIDR '${cidr_range}' on port '${port}'"
     if aws ec2 revoke-security-group-ingress \
         --group-id "$sg_id" \
         --protocol "$protocol" \
         --port "$port" \
         --cidr "$cidr_range" 2>>.errors.logs ; then
-        log_msg "Successfully REMOVED rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
+        log_msg "Successfully REMOVED rule for CIDR '${cidr_range}' on port '${port}'"
     fi
 }
 
@@ -49,13 +49,13 @@ authorize_sg_inbound(){
     local port="$3"
     local cidr_range="$4"
     sleep 0.5
-    log_msg "Attempting to UPDATE rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
+    log_msg "Attempting to UPDATE rule for CIDR '${cidr_range}' on port '${port}'"
     aws ec2 authorize-security-group-ingress \
         --group-id "$sg_id" \
         --protocol "$protocol" \
         --port "$port" \
         --cidr "$cidr_range" 1>/dev/null
-    log_msg "Successfully UPDATED rule for CIDR ${cidr_range} on port ${_INBOUND_PORT}"
+    log_msg "Successfully UPDATED rule for CIDR '${cidr_range}' on port '${port}'"
 }
 
 
@@ -95,7 +95,7 @@ main(){
     echo "$cidr_ranges"
     revoke_inbound_rule_loop "$sg_id" "$protocol" "$port" "$cidr_ranges"
     update_inbound_rule_loop "$sg_id" "$protocol" "$port" "$cidr_ranges"
-    log_msg "Completed setting inbound rules for ${_SECURITY_GROUP_ID}"
+    log_msg "Completed setting inbound rules for ${sg_id}"
 }
 
 # Global variables

@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - staging
+      - production
     paths-ignore:
       - README.md
 env:

@@ -11,7 +11,7 @@
       "SKIP_DEPLOYMENT_CHECKS": "--skip-deployments-check"
     }
   ],
-  "master": [
+  "production": [
     {
       "AWS_ACCOUND_ID_NAME": "AWS_ACCOUNT_ID_PRODUCTION",
       "DOCKER_REPOSITORY_NAME": "DOCKER_REPOSITORY_PRODUCTION",

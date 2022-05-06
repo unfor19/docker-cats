@@ -25,6 +25,7 @@ log_msg(){
 
 
 revoke_sg_inbound(){
+    # https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/revoke-security-group-ingress.html#examples
     local sg_id="$1"
     local protocol="$2"
     local port="$3"

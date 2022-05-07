@@ -1,3 +1,10 @@
+### ----------------------------------------------------------------------------------
+### GitHub Actions - A few things to remember:
+###   - Using ".hidden:" keys, or any other non-reserved key is not supported
+###   - YAML anchors are not supported
+###   - A "secret" cannot be used in a job's output, GitHub will warn and ignore it
+###     Skip output 'OUTPUT_NAME' since it may contain secret.
+### ----------------------------------------------------------------------------------
 name: pipeline
 on:
   workflow_dispatch:

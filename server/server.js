@@ -89,6 +89,13 @@ app.get("/", async (req, res) => {
   res.send(parsedStream);
 });
 
+app.get("/healthy", async (req, res) => {
+  res.status(200).send({
+    status: 200,
+    healthy: "true",
+  });
+});
+
 // Main
 app.use(favicon(path.join(".", "app", "src", "favicon.ico")));
 app.use("/images", express.static(path.join(".", "app", "images")));

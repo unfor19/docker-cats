@@ -19,13 +19,12 @@ COPY app ./
 # Runtime workdir
 WORKDIR /usr/src/
 
-# Run as a non-root user
-RUN addgroup appgroup && \
-    useradd appuser --gid appgroup --home-dir /usr/src && \
-    chown -R appuser:appgroup /usr/src
-USER appuser
+# Run as a non-root user - DOES NOT WORK
+# Non-privileged user (not root) can't open a listening socket on ports below 1024.
+# https://stackoverflow.com/a/60373143/5285732
 
-# For documentation only
+# EXPOSE is for documentation only - does not do anything
+# 8080 is the default port the server is listening on
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 CMD  wget --spider -S http://localhost:8080/healthy || exit 1
 

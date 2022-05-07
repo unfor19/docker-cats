@@ -61,7 +61,7 @@
           "wget --spider -S \"localhost:80/healthy\" || exit 1"
         ],
         "timeout": 5,
-        "interval": 30,
+        "interval": 15,
         "startPeriod": null
       },
       "essential": true,

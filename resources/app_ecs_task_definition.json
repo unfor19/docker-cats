@@ -23,7 +23,9 @@
         }
       ],
       "command": [],
-      "linuxParameters": null,
+      "linuxParameters": {
+        "initProcessEnabled": true
+      },
       "cpu": 0,
       "environment": [
         {
@@ -45,7 +47,7 @@
       "memory": null,
       "memoryReservation": null,
       "volumesFrom": [],
-      "stopTimeout": null,
+      "stopTimeout": 100,
       "image": "unfor19/docker-cats",
       "startTimeout": null,
       "firelensConfiguration": null,

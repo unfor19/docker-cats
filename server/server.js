@@ -2,6 +2,7 @@
 
 // Requirements
 const fs = require("fs");
+const http = require("http");
 const path = require("path");
 
 const express = require("express");
@@ -19,6 +20,9 @@ const FROM_AUTHOR = process.env.FROM_AUTHOR
 const PORT = process.env.PORT ? process.env.PORT : 8080;
 const HOST = process.env.HOST ? process.env.HOST : "0.0.0.0";
 const CLIENT_ID = process.env.CLIENT_ID ? process.env.CLIENT_ID : "";
+const SIGTERM_STOP_TIMEOUT_SECONDS = process.env.SIGTERM_STOP_TIMEOUT_SECONDS
+  ? parseInt(process.env.SIGTERM_STOP_TIMEOUT_SECONDS)
+  : 100; // Defaults to 100 seconds
 
 // App
 const app = express();
@@ -109,8 +113,24 @@ app.get("/healthy", async (req, res) => {
   });
 });
 
-// Main
-app.use(favicon(path.join(".", "app", "src", "favicon.ico")));
 app.use("/images", express.static(path.join(".", "app", "images")));
+app.use(favicon(path.join(".", "app", "src", "favicon.ico")));
+
+// Main
 app.listen(PORT, HOST);
+const server = http.createServer(app);
+
+// Graceful termination
+process.on("SIGTERM", () => {
+  console.log(
+    `SIGTERM signal received: closing HTTP server in ${SIGTERM_STOP_TIMEOUT_SECONDS} seconds`
+  );
+  setTimeout(() => {
+    server.close(() => {
+      console.log("HTTP server closed, closing process");
+      process.exit(143); // SIGTERM
+    });
+  }, SIGTERM_STOP_TIMEOUT_SECONDS * 1000);
+});
+
 console.log(`Running on http://${HOST}:${PORT}`);

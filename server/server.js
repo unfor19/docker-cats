@@ -133,4 +133,13 @@ process.on("SIGTERM", () => {
   }, SIGTERM_STOP_TIMEOUT_SECONDS * 1000);
 });
 
+// Keyboard interrupt - CTRL+C
+process.on("SIGINT", () => {
+  console.log(`SIGINT signal received: closing HTTP server`);
+  server.close(() => {
+    console.log("HTTP server closed, closing process");
+    process.exit(130); // SIGINT
+  });
+});
+
 console.log(`Running on http://${HOST}:${PORT}`);

@@ -2,3 +2,7 @@
 !.*ignore*
 node_modules/
 !.github
+
+
+lambdas/**/package/
+*.zip

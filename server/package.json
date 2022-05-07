@@ -10,8 +10,10 @@
     },
     "dependencies": {
         "express": "^4.16.1",
+        "express-winston": "^4.2.0",
         "google-auth-library": "^7.0.4",
-        "serve-favicon": "^2.5.0"
+        "serve-favicon": "^2.5.0",
+        "winston": "^3.7.2"
     },
     "devDependencies": {
         "dotenv": "^8.2.0"

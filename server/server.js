@@ -6,6 +6,8 @@ const path = require("path");
 
 const express = require("express");
 const favicon = require("serve-favicon");
+var winston = require("winston"),
+  expressWinston = require("express-winston");
 const { OAuth2Client } = require("google-auth-library");
 
 // Constants
@@ -31,16 +33,27 @@ function read_file() {
 }
 
 // Logging
-const logger = function (req, res, next) {
-  console.log(
-    `\nOriginal URL: ${req.originalUrl}\nBase URL: ${req.baseUrl}\nPath: ${
-      req.path
-    }\nRoute: ${JSON.stringify(req.route)}\nBody: ${req.body}`
-  );
-  console.log(`Request Headers:\n${JSON.stringify(req.headers, null, 2)}`);
-  next(); // Passing the request to the next handler in the stack.
-};
-app.use(logger);
+const routeWhitelist = ["/"];
+
+app.use(
+  expressWinston.logger({
+    transports: [new winston.transports.Console()],
+    format: winston.format.combine(
+      // winston.format.colorize(),
+      winston.format.json()
+    ),
+    meta: true, // optional: control whether you want to log the meta data about the request (default to true)
+    msg: "HTTP {{req.method}} {{req.url}}", // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
+    expressFormat: true, // Use the default Express/morgan request formatting. Enabling this will override any msg if true. Will only output colors with colorize set to true
+    colorize: false, // Color the text and status code, using the Express/morgan color palette (text: gray, status: default green, 3XX cyan, 4XX yellow, 5XX red).
+    // ignoreRoute: function (req, res) {
+    //   return false;
+    // }, // optional: allows to skip some log messages based on request and/or response
+    ignoreRoute: function (req, res) {
+      return routeWhitelist.indexOf(req.path) === -1;
+    },
+  })
+);
 
 async function verifyToken(token) {
   const client = new OAuth2Client(CLIENT_ID);

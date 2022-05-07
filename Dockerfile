@@ -19,6 +19,12 @@ COPY app ./
 # Runtime workdir
 WORKDIR /usr/src/
 
+# Run as a non-root user
+RUN addgroup appgroup && \
+    useradd appuser --gid appgroup --home-dir /usr/src && \
+    chown -R appuser:appgroup /usr/src
+USER appuser
+
 # For documentation only
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 CMD  wget --spider -S http://localhost:8080/healthy || exit 1

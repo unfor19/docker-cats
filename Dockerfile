@@ -2,6 +2,7 @@ ARG BASE_IMAGE="node"
 ARG BASE_IMAGE_TAG="16.15.0-buster-slim"
 
 FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
+RUN apt-get update && apt-get install -y wget
 
 # Install dependencies - cache it
 WORKDIR /usr/src/server
@@ -20,5 +21,8 @@ WORKDIR /usr/src/
 
 # For documentation only
 EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 CMD  wget --spider -S http://localhost:8080/healthy || exit 1
+
+LABEL maintainer="Meir Gabay"
 
 CMD [ "node", "server/server.js" ]

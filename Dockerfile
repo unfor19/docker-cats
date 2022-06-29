@@ -1,9 +1,24 @@
 ARG BASE_IMAGE="node"
 ARG BASE_IMAGE_TAG="16.15.0-buster-slim"
 
-FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
+FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG} as base
 RUN apt-get update && apt-get install -y wget
 
+FROM base as dev
+RUN echo deb http://deb.debian.org/debian buster-backports main | tee /etc/apt/sources.list.d/buster-backports.list && \
+    apt-get update && \
+    apt-get install -y \
+    zip unzip make bsdmainutils git bash-completion && \
+    echo "source /etc/profile.d/bash_completion.sh" >> ~/.bashrc
+RUN wget -q -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
+    chmod +x jq && \
+    mv jq /usr/local/bin/jq
+
+WORKDIR /code/
+ENTRYPOINT [ "bash" ]
+# docker run -v "$PWD":/code/ ...
+
+FROM base as app
 # Install dependencies - cache it
 WORKDIR /usr/src/server
 COPY server/package*.json server/yarn.lock ./

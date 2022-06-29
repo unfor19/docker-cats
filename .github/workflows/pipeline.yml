@@ -9,9 +9,9 @@ name: pipeline
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master # staging
-      - production
+    # branches:
+    #   - master # staging
+    #   - production
     paths-ignore:
       - README.md
 env:
@@ -132,7 +132,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
   deploy-ecs:
     name: Deploy to ECS
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.prepare.outputs.IS_DEPLOY == 'true' }}
     runs-on: ubuntu-20.04
     needs:
       - prepare

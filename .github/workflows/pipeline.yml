@@ -69,8 +69,6 @@ jobs:
     env:
       DOCKER_APP_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
       DOCKER_APP_LATEST_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-latest
-      DOCKERHUB_APP_TAG: ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
-      DOCKERHUB_APP_LATEST_TAG: ${{ env.DOCKERHUB_REPOSITORY }}:{{ needs.prepare.outputs.GIT_BRANCH }}-latest
       GIT_BRANCH: ${{ needs.prepare.outputs.GIT_BRANCH }}
       GIT_COMMIT: ${{ needs.prepare.outputs.GIT_COMMIT }}
     steps:
@@ -117,8 +115,8 @@ jobs:
           tags: |
             ${{ env.DOCKER_APP_TAG }}
             ${{ env.DOCKER_APP_LATEST_TAG }}
-            ${{ env.DOCKERHUB_APP_TAG }}
-            ${{ env.DOCKERHUB_APP_LATEST_TAG }}
+            ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
+            ${{ env.DOCKERHUB_REPOSITORY }}:{{ needs.prepare.outputs.GIT_BRANCH }}-latest
           # Cache backend API
           # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#cache-backend-api
           cache-from: type=gha

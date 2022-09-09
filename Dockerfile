@@ -1,5 +1,5 @@
 ARG BASE_IMAGE="node"
-ARG BASE_IMAGE_TAG="18.9.0-slim"
+ARG BASE_IMAGE_TAG="18.9.0-bullseye-slim"
 
 FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG} as base
 RUN apt-get update && apt-get install -y wget

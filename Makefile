@@ -20,21 +20,10 @@ ifneq ("$(wildcard .env.${STAGE})","")
 include .env.${STAGE}
 endif
 
-# Set BASH_BASH according to host type
-ifneq (${CI},true)
-# Local on Host
-BASH_PATH=/usr/local/bin/bash
-ifneq ("$(wildcard /.dockerenv)","")
-# Local Docker
-BASH_PATH=/bin/bash
-endif
-else
-# CICD
-BASH_PATH=/usr/bin/bash
-endif
+BASH_PATH:=$(shell which bash)
 
 # Set default shell to `bash` instead of `sh`
-SHELL=${BASH_PATH}
+SHELL:=${BASH_PATH}
 
 # Generic Variables
 TIMESTAMP:=$(shell date +%s)

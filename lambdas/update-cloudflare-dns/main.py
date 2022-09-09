@@ -15,6 +15,16 @@
 # https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-upload-code
 # cd - # get back to root dir
 # aws lambda update-function-code --function-name docker-cats-update-cloudflare-dns --zip-file fileb://lambdas/update-cloudflare-dns.zip
+# AWS Lambda Function - Python with dependencies
+# https://docs.aws.amazon.com/lambda/latest/dg/python-package.html
+# python -m pip install --target ./lambdas/update-cloudflare-dns/package cloudflare
+# rm ./lambdas/update-cloudflare-dns.zip && cd ./lambdas/update-cloudflare-dns/package && zip -rq ../../update-cloudflare-dns.zip . && cd -
+# cd ./lambdas/update-cloudflare-dns && zip -g ../update-cloudflare-dns.zip ./main.py && cd -
+
+# Deploy your .zip file to the function
+# https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-upload-code
+# cd - # get back to root dir
+# aws lambda update-function-code --function-name docker-cats-update-cloudflare-dns --zip-file fileb://lambdas/update-cloudflare-dns.zip
 
 # Requirements:
 # python -m pip install cloudflare
@@ -27,6 +37,7 @@
 # CLOUDFLARE_DNS_RECORD_TYPE
 # CLOUDFLARE_DNS_RECORD_VALUE
 
+import boto3
 import boto3
 import CloudFlare
 from os import environ

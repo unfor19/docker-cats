@@ -1,4 +1,10 @@
+# Paranoid mode - Ignore everything
 **
+
+# Except from
 !server
 !app
+
+# Though always ignore
 .*
+node_modules

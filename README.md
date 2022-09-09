@@ -24,17 +24,30 @@ Change the author
 docker run --name cats --rm -p 8080:8080 -d  -e APP_NAME=dark -e FROM_AUTHOR=darker unfor19/docker-cats
 ```
 
+View the app in local browser via [http://localhost:8080](http://localhost:8080)
+
 ## Build From Source
 
 ```bash
 docker build -t unfor19/docker-cats .
 ```
 
-## Challenge
+<details>
 
-The [Dockerfile](https://github.com/unfor19/docker-cats/blob/master/Dockerfile) can be improved, and there's no CI/CD process for this project. Go check [unfor19/devops-genin](https://github.com/unfor19/devops-genin) for more details.
+<summary>Deploy in AWS behind Cloudflare - Expand/collapse</summary>
 
 ## Deploy in AWS behind Cloudflare
+
+Before we even start, this is how the website should look like after a successful deployment - [https://docker-cats-stg.meirg.co.il](https://docker-cats-stg.meirg.co.il).
+
+### Describing my journey
+
+1. **Provision a least expensive architecture for mockups/proof of concepts**; though still robust architecture. For example, I dodged the bullet of provisioning a Load Balancer (ALB/NLB).
+2. Publish an example of how to use GitHub Actions for building a Docker image, pushing it to a Docker registry (AWS ECR in my case) and performing a blue/green deployment to AWS ECS with [ecs-deploy](https://github.com/silinternational/ecs-deploy). I truly believe that this project can be converted from ECS to EKS or any other microservices orchestrator.
+3. I've created everything manually for "staging" via AWS Console. During the process, I've collected anything that I can (see [./resources](./resources/)) to ease the future move from "AWS Console to infrastructure as code (IaC)".
+4. CICD
+   1. Network reachability - First, I added my IP address ([ifconfig.me/ip](https://ifconfig.me/ip)) to the app's security group inbound rules. After checking that the app is reachable from my machine, I moved on to Cloudflare configuration (whitelist Cloudflare CIDR ranges)
+
 
 ### Infrastructure
 
@@ -123,11 +136,13 @@ Final result - [https://docker-cats-stg.meirg.co.il](https://docker-cats-stg.mei
 Cloudflare --> meets AWS security group rules --> ECS Task public IP
 ```
 
+</details>
+
 ## References
 
-- [images/baby.jpg](./images/baby.jpg) source https://www.findcatnames.com/great-black-cat-names/ - [img](https://t9b8t3v6.rocketcdn.me/wp-content/uploads/2014/10/black-cat-and-moon.jpg)
-- [images/green.jpg](./images/green.jpg) source http://challengethestorm.org/cat-taught-love/ - [img](http://challengethestorm.org/wp-content/uploads/2017/03/cat-2083492_700x426.jpg)
-- [images/dark.jpg](./images/dark.jpg) source https://www.maxpixel.net/Animals-Stone-Kitten-Cats-Cat-Flower-Pet-Flowers-2536662
+- [app/images/baby.jpg](./app/images/baby.jpg) source https://www.findcatnames.com/great-black-cat-names/ - [img](https://t9b8t3v6.rocketcdn.me/wp-content/uploads/2014/10/black-cat-and-moon.jpg)
+- [app/images/green.jpg](./app/images/green.jpg) source http://challengethestorm.org/cat-taught-love/ - [img](http://challengethestorm.org/wp-content/uploads/2017/03/cat-2083492_700x426.jpg)
+- [app/images/dark.jpg](./app/images/dark.jpg) source https://www.maxpixel.net/Animals-Stone-Kitten-Cats-Cat-Flower-Pet-Flowers-2536662
 
 
 ## Authors

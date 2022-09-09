@@ -1,5 +1,5 @@
 ARG BASE_IMAGE="node"
-ARG BASE_IMAGE_TAG="16.15.0-buster-slim"
+ARG BASE_IMAGE_TAG="18.9-buster-slim"
 
 FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG} as base
 RUN apt-get update && apt-get install -y wget

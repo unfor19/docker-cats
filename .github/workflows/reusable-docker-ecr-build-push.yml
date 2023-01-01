@@ -1,0 +1,156 @@
+on:
+  workflow_call:
+    inputs:
+      DOCKER_APP_NAME:
+        required: true
+        type: string
+
+      PUSH_LATEST:
+        required: false
+        type: string
+        default: "false"
+        description: Whether to push "latest" image tag to ECR
+
+      DOCKER_APP_REPOSITORY:
+        required: true
+        type: string
+      DOCKER_CACHE_REPOSITORY:
+        required: true
+        type: string
+
+      DOCKER_APP_BUILD_ARGS:
+        required: false
+        type: string
+      DOCKER_BUILDER_BUILD_ARGS:
+        required: false
+        type: string
+
+      DOCKER_APP_TARGET_NAME:
+        required: false
+        type: string
+        default: app
+      DOCKER_BUILDER_TARGET_NAME:
+        required: false
+        type: string
+        default: builder
+
+      DOCKERFILE_PATH:
+        required: false
+        type: string
+        default: Dockerfile
+      DOCKER_BUILD_CONTEXT:
+        required: false
+        type: string
+        default: "."
+
+      DOCKER_REPO_CACHE_USERNAME_NAME:
+        required: true
+        type: string
+      DOCKER_REPO_CACHE_PASSWORD_NAME:
+        required: true
+        type: string
+      DOCKER_REPO_APP_USERNAME_NAME:
+        required: true
+        type: string
+      DOCKER_REPO_APP_PASSWORD_NAME:
+        required: true
+        type: string
+
+# All inputs are set as env vars
+# This is a must to separate the logic in the workflow;
+# I prefer not to use inputs.INPUT_NAME in the workflow
+# Using env.ENV_NAME is more granular and flexible
+env:
+  # Inputs
+  DOCKER_APP_NAME: ${{ inputs.DOCKER_APP_NAME }}
+
+  PUSH_LATEST: ${{ inputs.PUSH_LATEST }}
+
+  DOCKER_APP_REPOSITORY: ${{ inputs.DOCKER_APP_REPOSITORY }}
+  DOCKER_CACHE_REPOSITORY: ${{ inputs.DOCKER_CACHE_REPOSITORY }}
+
+  DOCKER_APP_BUILD_ARGS: ${{ inputs.DOCKER_APP_BUILD_ARGS }}
+  DOCKER_BUILDER_BUILD_ARGS: ${{ inputs.DOCKER_BUILDER_BUILD_ARGS }}
+
+  DOCKER_APP_TARGET_NAME: ${{ inputs.DOCKER_APP_TARGET_NAME }}
+  DOCKER_BUILDER_TARGET_NAME: ${{ inputs.DOCKER_BUILDER_TARGET_NAME }}
+
+  DOCKERFILE_PATH: ${{ inputs.DOCKERFILE_PATH }}
+  DOCKER_BUILD_CONTEXT: ${{ inputs.DOCKER_BUILD_CONTEXT }}
+
+  DOCKER_REPO_CACHE_USERNAME_NAME: ${{ inputs.DOCKER_REPO_CACHE_USERNAME_NAME }}
+  DOCKER_REPO_CACHE_PASSWORD_NAME: ${{ inputs.DOCKER_REPO_CACHE_PASSWORD_NAME }}
+  DOCKER_REPO_APP_USERNAME_NAME: ${{ inputs.DOCKER_REPO_APP_USERNAME_NAME }}
+  DOCKER_REPO_APP_PASSWORD_NAME: ${{ inputs.DOCKER_REPO_APP_PASSWORD_NAME }}
+
+  # Static values
+  AWS_REGION: "eu-west-1"
+
+jobs:
+  reusable_workflow_job:
+    name: ${{ inputs.DOCKER_APP_NAME }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4
+        # Provides: GITHUB_REF_SLUG
+      - name: Prepare Environment Variables
+        run: |
+          export GIT_SHORT_COMMIT="${GITHUB_SHA:0:8}"
+          echo "GIT_SHORT_COMMIT=${GIT_SHORT_COMMIT}" >> $GITHUB_ENV
+          export DOCKER_APP_BASE_TAG="${DOCKER_APP_REPOSITORY}:${GITHUB_REF_SLUG}"
+          export DOCKER_CACHE_BASE_TAG="${DOCKER_CACHE_REPOSITORY}:${GITHUB_REF_SLUG}"
+
+          echo "DOCKER_APP_TAG=${DOCKER_APP_BASE_TAG}-${GIT_SHORT_COMMIT}" >> $GITHUB_ENV
+          echo "DOCKER_APP_LATEST_TAG=${DOCKER_APP_BASE_TAG}-latest" >> $GITHUB_ENV
+          echo "DOCKER_CACHE_BUILDER_TAG=${DOCKER_CACHE_BASE_TAG}-cache-builder" >> $GITHUB_ENV
+          echo "DOCKER_CACHE_APP_TAG=${DOCKER_CACHE_BASE_TAG}-cache-app" >> $GITHUB_ENV
+      - name: Configure AWS credentials for Cache Repo
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets[env.DOCKER_REPO_CACHE_USERNAME_NAME] }}
+          aws-secret-access-key: ${{ secrets[env.DOCKER_REPO_CACHE_PASSWORD_NAME] }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr-cache
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Configure AWS credentials for App Repo
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets[env.DOCKER_REPO_APP_USERNAME_NAME] }}
+          aws-secret-access-key: ${{ secrets[env.DOCKER_REPO_APP_PASSWORD_NAME] }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr-app
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Docker pull cached images from ECR
+        # Allow failure if images don't exist
+        run: |
+          docker pull "$DOCKER_CACHE_BUILDER_TAG" || true &
+          docker pull "$DOCKER_CACHE_APP_TAG" || true
+          wait
+      - name: Docker Build Builder Image
+        run: |
+          docker build --cache-from ${DOCKER_CACHE_BUILDER_TAG} $(for i in ${DOCKER_BUILDER_BUILD_ARGS[@]}; do out+="--build-arg $i " ; done; echo $out;out="") \
+            -t ${DOCKER_CACHE_BUILDER_TAG} \
+            --target ${DOCKER_BUILDER_TARGET_NAME} -f ${DOCKERFILE_PATH} ${DOCKER_BUILD_CONTEXT}
+      - name: Docker Build App Image
+        run: |
+          docker build --cache-from ${DOCKER_CACHE_BUILDER_TAG} --cache-from ${DOCKER_CACHE_APP_TAG} $(for i in ${DOCKER_APP_BUILD_ARGS[@]}; do out+="--build-arg $i " ; done; echo $out;out="") \
+            -t ${DOCKER_CACHE_APP_TAG} \
+            -t ${DOCKER_APP_TAG} \
+            -t ${DOCKER_APP_LATEST_TAG} \
+            --target ${DOCKER_APP_TARGET_NAME} \
+            -f ${DOCKERFILE_PATH} ${DOCKER_BUILD_CONTEXT}
+      - name: Docker Push Cache Images
+        run: |
+          docker push ${DOCKER_CACHE_BUILDER_TAG}
+          docker push ${DOCKER_CACHE_APP_TAG}
+      - name: Docker Push App Image
+        run: |
+          docker push ${DOCKER_APP_TAG}
+      - name: Docker Push App Latest Image
+        if: env.PUSH_LATEST == 'true'
+        run: |
+          docker push ${DOCKER_APP_LATEST_TAG}

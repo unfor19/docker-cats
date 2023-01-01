@@ -21,6 +21,7 @@ env:
   AWS_REGION: eu-west-1
   DOCKER_CACHE_TYPE: gha # local or gha
   DOCKERHUB_REPOSITORY: docker.io/unfor19/docker-cats
+  CI_BUILD_NUMBER: ${{ github.run_number }}
   ### ---------------------------------------------------------------
 
 jobs:
@@ -56,100 +57,133 @@ jobs:
       GIT_BRANCH: ${{ steps.dynamic-outputs.outputs.GIT_BRANCH }}
       GIT_COMMIT: ${{ steps.dynamic-outputs.outputs.GIT_SHORT_COMMIT }}
       IS_DEPLOY: ${{ steps.dynamic-outputs.outputs.IS_DEPLOY }}
+      DOCKER_REPOSITORY_NAME: ${{ steps.export-configmap.outputs.DOCKER_REPOSITORY_NAME }}
+      DOCKER_USERNAME_NAME: ${{ steps.export-configmap.outputs.DOCKER_USERNAME_NAME }}
+      DOCKER_PASSWORD_NAME: ${{ steps.export-configmap.outputs.DOCKER_PASSWORD_NAME }}
 
-  docker-build-push:
-    name: Docker Build Push
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-20.04
+
+  build-and-push:
+    name: Docker Build and Push
     needs:
       - prepare
     strategy:
       matrix:
-        configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}
-    env:
-      DOCKER_APP_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
-      DOCKER_APP_LATEST_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-latest
-      GIT_BRANCH: ${{ needs.prepare.outputs.GIT_BRANCH }}
-      GIT_COMMIT: ${{ needs.prepare.outputs.GIT_COMMIT }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Inject slug/short variables
-        uses: rlespinasse/github-slug-action@v4
-      - # Build for arm64 so the app can run on macOS M1
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - # Required for Docker cache
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      # Local cache exporter
-      # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
-      - name: Cache Docker layers
-        if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ env.PURGE_CACHE }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ env.PURGE_CACHE }}-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets[matrix.configmap.DOCKER_USERNAME_NAME] }}
-          aws-secret-access-key: ${{ secrets[matrix.configmap.DOCKER_PASSWORD_NAME] }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}        
-      - name: Build and push - cache type gha
-        if: ${{ env.DOCKER_CACHE_TYPE == 'gha' }}
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.DOCKER_APP_TAG }}
-            ${{ env.DOCKER_APP_LATEST_TAG }}
-            ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
-            ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-latest
-            ${{ env.DOCKERHUB_REPOSITORY }}:latest
-          # Cache backend API
-          # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#cache-backend-api
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Build and push - cache type local
-        if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.DOCKER_APP_TAG }}
-            ${{ env.DOCKER_APP_LATEST_TAG }}
-          # Local cache exporter
-          # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-      - # Temp fix to Local cache exporter
-        # https://github.com/docker/build-push-action/issues/252
-        # https://github.com/moby/buildkit/issues/1896
-        name: Move cache local
-        if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+        include:
+          - DOCKER_APP_NAME: docker-cats
+            DOCKERFILE_PATH: Dockerfile
+            DOCKER_BUILD_CONTEXT: "."
+    uses: unfor19/docker-cats/.github/workflows/reusable-docker-ecr-build-push.yml@feature/reusable-ecr
+    secrets: inherit
+    with:
+      DOCKER_APP_NAME: ${{ matrix.DOCKER_APP_NAME }}
+      PUSH_LATEST: ${{ needs.prepare.outputs.IS_DEPLOY }}
+      DOCKERFILE_PATH: ${{ matrix.DOCKERFILE_PATH }}
+      DOCKER_BUILD_CONTEXT: ${{ matrix.DOCKER_BUILD_CONTEXT }}
+      DOCKER_BUILDER_BUILD_ARGS: |
+        GIT_BRANCH=${{ needs.prepare.outputs.GIT_BRANCH }}
+        BUILD_NUMBER=${{ github.run_number }}
+        GIT_COMMIT=${{ needs.prepare.outputs.GIT_COMMIT }}
+      DOCKER_APP_REPOSITORY: ${{ needs.prepare.outputs.DOCKER_REPOSITORY_NAME }}/${{ matrix.DOCKER_APP_NAME }}
+      DOCKER_CACHE_REPOSITORY: ${{ needs.prepare.outputs.DOCKER_REPOSITORY_NAME }}/${{ matrix.DOCKER_APP_NAME }}
+      DOCKER_REPO_CACHE_USERNAME_NAME: ${{ needs.prepare.outputs.DOCKER_USERNAME_NAME }}
+      DOCKER_REPO_CACHE_PASSWORD_NAME: ${{ needs.prepare.outputs.DOCKER_PASSWORD_NAME }}
+      DOCKER_REPO_APP_USERNAME_NAME: ${{ needs.prepare.outputs.DOCKER_USERNAME_NAME }}
+      DOCKER_REPO_APP_PASSWORD_NAME: ${{ needs.prepare.outputs.DOCKER_PASSWORD_NAME }}
+
+
+  # docker-build-push:
+  #   name: Docker Build Push
+  #   if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+  #   runs-on: ubuntu-20.04
+  #   needs:
+  #     - prepare
+  #   strategy:
+  #     matrix:
+  #       configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}
+  #   env:
+  #     DOCKER_APP_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
+  #     DOCKER_APP_LATEST_TAG: ${{ secrets[matrix.configmap.DOCKER_REPOSITORY_NAME] }}:${{ needs.prepare.outputs.GIT_BRANCH }}-latest
+  #     GIT_BRANCH: ${{ needs.prepare.outputs.GIT_BRANCH }}
+  #     GIT_COMMIT: ${{ needs.prepare.outputs.GIT_COMMIT }}
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Inject slug/short variables
+  #       uses: rlespinasse/github-slug-action@v4
+  #     - # Build for arm64 so the app can run on macOS M1
+  #       name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v2
+  #     - # Required for Docker cache
+  #       name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
+  #     # Local cache exporter
+  #     # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
+  #     - name: Cache Docker layers
+  #       if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: /tmp/.buildx-cache
+  #         key: ${{ runner.os }}-buildx-${{ env.PURGE_CACHE }}-${{ github.sha }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-buildx-${{ env.PURGE_CACHE }}-
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-access-key-id: ${{ secrets[matrix.configmap.DOCKER_USERNAME_NAME] }}
+  #         aws-secret-access-key: ${{ secrets[matrix.configmap.DOCKER_PASSWORD_NAME] }}
+  #         aws-region: ${{ env.AWS_REGION }}
+  #     - name: Login to Amazon ECR
+  #       id: login-ecr
+  #       uses: aws-actions/amazon-ecr-login@v1
+  #     - name: Login to Docker Hub
+  #       uses: docker/login-action@v2
+  #       with:
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_PASSWORD }}        
+  #     - name: Build and push - cache type gha
+  #       if: ${{ env.DOCKER_CACHE_TYPE == 'gha' }}
+  #       uses: docker/build-push-action@v3
+  #       with:
+  #         context: .
+  #         push: true
+  #         platforms: linux/amd64,linux/arm64
+  #         tags: |
+  #           ${{ env.DOCKER_APP_TAG }}
+  #           ${{ env.DOCKER_APP_LATEST_TAG }}
+  #           ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-${{ needs.prepare.outputs.GIT_COMMIT }}
+  #           ${{ env.DOCKERHUB_REPOSITORY }}:${{ needs.prepare.outputs.GIT_BRANCH }}-latest
+  #           ${{ env.DOCKERHUB_REPOSITORY }}:latest
+  #         # Cache backend API
+  #         # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#cache-backend-api
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #     - name: Build and push - cache type local
+  #       if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
+  #       uses: docker/build-push-action@v3
+  #       with:
+  #         context: .
+  #         push: true
+  #         tags: |
+  #           ${{ env.DOCKER_APP_TAG }}
+  #           ${{ env.DOCKER_APP_LATEST_TAG }}
+  #         # Local cache exporter
+  #         # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+  #     - # Temp fix to Local cache exporter
+  #       # https://github.com/docker/build-push-action/issues/252
+  #       # https://github.com/moby/buildkit/issues/1896
+  #       name: Move cache local
+  #       if: ${{ env.DOCKER_CACHE_TYPE == 'local' }}
+  #       run: |
+  #         rm -rf /tmp/.buildx-cache
+  #         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
   deploy-ecs:
     name: Deploy to ECS
     if: ${{ needs.prepare.outputs.IS_DEPLOY == 'true' }}
     runs-on: ubuntu-20.04
     needs:
       - prepare
-      - docker-build-push
+      - build-and-push
     strategy:
       matrix:
         configmap: ${{ fromJSON(needs.prepare.outputs.CONFIGMAP) }}

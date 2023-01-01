@@ -16,21 +16,19 @@ WORKDIR /code/
 ENTRYPOINT [ "bash" ]
 # docker run -v "$PWD":/code/ ...
 
-FROM base as app
+FROM base as builder
 # Install dependencies - cache it
-WORKDIR /usr/src/server
+WORKDIR /code
 COPY server/package*.json server/yarn.lock ./
 RUN yarn install
 
-# Copy server source code
-COPY server ./
+# Copy all code to image
+COPY . .
 
-# Copy app source code
-WORKDIR /usr/src/app
-COPY app ./
 
-# Runtime workdir
-WORKDIR /usr/src/
+FROM base as app
+WORKDIR /app
+COPY --from=builder /code/ ./
 
 # Run as a non-root user - DOES NOT WORK
 # Non-privileged user (not root) can't open a listening socket on ports below 1024.

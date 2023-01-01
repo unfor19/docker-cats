@@ -83,8 +83,8 @@ jobs:
         GIT_BRANCH=${{ needs.prepare.outputs.GIT_BRANCH }}
         BUILD_NUMBER=${{ github.run_number }}
         GIT_COMMIT=${{ needs.prepare.outputs.GIT_COMMIT }}
-      DOCKER_APP_REPOSITORY: ${{ needs.prepare.outputs.DOCKER_REPOSITORY_NAME }}/${{ matrix.DOCKER_APP_NAME }}
-      DOCKER_CACHE_REPOSITORY: ${{ needs.prepare.outputs.DOCKER_REPOSITORY_NAME }}/${{ matrix.DOCKER_APP_NAME }}
+      DOCKER_APP_REPOSITORY: ${{ secrets[needs.prepare.outputs.DOCKER_REPOSITORY_NAME] }}/${{ matrix.DOCKER_APP_NAME }}
+      DOCKER_CACHE_REPOSITORY: ${{ secrets[needs.prepare.outputs.DOCKER_REPOSITORY_NAME] }}/${{ matrix.DOCKER_APP_NAME }}
       DOCKER_REPO_CACHE_USERNAME_NAME: ${{ needs.prepare.outputs.DOCKER_USERNAME_NAME }}
       DOCKER_REPO_CACHE_PASSWORD_NAME: ${{ needs.prepare.outputs.DOCKER_PASSWORD_NAME }}
       DOCKER_REPO_APP_USERNAME_NAME: ${{ needs.prepare.outputs.DOCKER_USERNAME_NAME }}
